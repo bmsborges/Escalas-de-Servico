@@ -157,3 +157,46 @@ elif not menu_arquivo and menu_elementos == "Editar":
     df = get_pessoal()
     st.data_editor(df, use_container_width=True, num_rows="dynamic")
     st.info("Pode editar diretamente na tabela acima.")
+
+# 3. ESCALAS: GERAR
+elif not menu_arquivo and menu_escalas == "Gerar":
+    st.title("🚀 Gerador de Escalas Mensais")
+    col_m, col_a = st.columns(2)
+    mes = col_m.slider("Mês", 1, 12, datetime.now().month)
+    ano = col_a.number_input("Ano", 2024, 2030, 2026)
+    
+    if st.button("Gerar Escala 22:00 - 07:00"):
+        df_p = get_pessoal()
+        if len(df_p) < 6:
+            st.error("Erro: Necessita de pelo menos 6 elementos na base de dados.")
+        else:
+            escala_final = gerar_escala_logica(df_p, mes, ano)
+            st.dataframe(escala_final, use_container_width=True)
+            
+            # Gravar no arquivo
+            if st.button("Confirmar e Arquivar Escala"):
+                conn = sqlite3.connect('gestao_escalas.db')
+                conn.execute("INSERT INTO arquivo_escalas (mes_ano, dados_csv, data_geracao) VALUES (?,?,?)",
+                             (f"{mes}/{ano}", escala_final.to_csv(), str(datetime.now())))
+                conn.commit()
+                conn.close()
+                st.success("Escala gravada no histórico!")
+
+# 4. ARQUIVO
+if menu_arquivo:
+    st.title("📁 Arquivo de Escalas")
+    conn = sqlite3.connect('gestao_escalas.db')
+    historico = pd.read_sql_query("SELECT * FROM arquivo_escalas", conn)
+    conn.close()
+    st.dataframe(historico, use_container_width=True)
+
+# 5. CONFIGURAÇÃO (Exemplo)
+if not menu_arquivo and "Configuração" in st.session_state or menu_config:
+    if menu_config == "Aspecto Gráfico":
+        st.title("🎨 Personalização Visual")
+        st.info("Aqui poderá alterar cores, logótipos e o modo escuro/claro.")
+        
+        if st.button("🔄 Gerar Dados de Teste (60 Elementos)"):
+            n = povoar_60_elementos()
+            st.success(f"Base de dados povoada com {n} elementos aleatórios!")
+            st.balloons()
