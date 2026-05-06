@@ -1,85 +1,129 @@
 import streamlit as st
-from datetime import datetime, date
 import sqlite3
+from datetime import datetime, date
+
+# Importação dos teus módulos auxiliares
 from styles import apply_styles
 from database import init_db, seed_demo_data, get_stats
 from logic import gerar_escala_mensal, export_to_excel
 
-st.set_page_config(page_title="Gestão Operacional", layout="wide")
+# 1. Configuração de Página
+st.set_page_config(page_title="Command Center - Operacional", layout="wide", page_icon="🛡️")
 init_db()
 apply_styles()
 
-st.markdown("<h1 style='text-align: center;'>SISTEMA OPERACIONAL</h1>", unsafe_allow_html=True)
+# 2. Cabeçalho Minimalista
+st.markdown("<h1 style='text-align: center; color: #374151;'>SISTEMA OPERACIONAL</h1>", unsafe_allow_html=True)
 
-menu = st.selectbox("NAVEGAÇÃO", 
-    ["🏠 Dashboard", "👤 Elementos", "📅 Escalas", "🔄 Presenças", "📥 Arquivo", "⚙️ Configuração"],
-    label_visibility="collapsed")
+# 3. Menu Superior Dropdown
+menu_opcoes = [
+    "🏠 Dashboard", 
+    "👤 Elementos", 
+    "📅 Escalas", 
+    "🔄 Presenças", 
+    "⚙️ Configuração"
+]
+escolha = st.selectbox("NAVEGAÇÃO PRINCIPAL", menu_opcoes, label_visibility="collapsed")
 
+# 4. Contentor Principal
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 
-if menu == "🏠 Dashboard":
-    df = get_stats()
+if escolha == "🏠 Dashboard":
+    df_stats = get_stats()
     c1, c2, c3 = st.columns(3)
-    c1.metric("Efetivos", len(df))
-    c2.metric("Serviços", df['servicos'].sum())
-    c3.metric("Faltas", df['faltas'].sum())
+    c1.metric("Efetivos Registados", len(df_stats))
+    c2.metric("Serviços Acumulados", df_stats['servicos'].sum())
+    c3.metric("Faltas Totais", df_stats['faltas'].sum())
+    st.info("Utilize o menu acima para navegar.")
 
-elif menu == "👤 Elementos":
-    aba1, aba2 = st.tabs(["Lista", "Novo"])
-    with aba1:
+elif escolha == "👤 Elementos":
+    aba_lista, aba_novo = st.tabs(["📋 Lista de Efetivos", "➕ Novo Cadastro"])
+    
+    with aba_lista:
         st.data_editor(get_stats(), use_container_width=True, hide_index=True)
-    with aba2:
-        with st.form("novo"):
-            n = st.text_input("Nome")
-            ni = st.text_input("Nº Interno")
-            pst = st.selectbox("Posto", ["Est", "B1", "B2", "B3", "SCH", "CHF"])
-            mot = st.radio("Motorista", ["Ligeiro", "Pesado"], horizontal=True)
-            crs = st.selectbox("Curso", ["TAS", "TAT", "TS", "Sem curso"])
-            tipo_d = st.radio("Disponibilidade", ["Fixo", "Pontual"], horizontal=True)
+        
+    with aba_novo:
+        with st.form("form_novo_elemento", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            nome = col1.text_input("Nome Profissional")
+            num = col2.text_input("Número Interno")
             
+            col3, col4, col5 = st.columns(3)
+            posto = col3.selectbox("Posto", ["Est", "ESP", "B1", "B2", "B3", "SCH", "CHF", "OFB1", "OFB2", "CMD"])
+            mot = col4.radio("Motorista", ["Ligeiro", "Pesado"], horizontal=True)
+            curso = col5.selectbox("Curso", ["TAS", "TAT", "TS", "Sem curso"])
+            
+            st.markdown("---")
+            st.write("📅 **Disponibilidade**")
+            tipo_d = st.radio("Tipo de Disponibilidade", ["Fixo", "Pontual"], horizontal=True)
+            
+            detalhe_final = ""
+
             if tipo_d == "Fixo":
-                det = st.multiselect("Dias Semana", ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
-                detalhe_final = ", ".join(det)
+                dias = st.multiselect("Selecione os dias da semana:", 
+                                     ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
+                detalhe_final = ", ".join(dias)
             else:
-                # Este é o bloco que faz aparecer o calendário
-                datas = st.date_input("Escolha os dias", value=None)
-                detalhe_final = ", ".join([str(d) for d in datas])
+                # CORREÇÃO DO CALENDÁRIO:
+                # Usamos uma tupla vazia ou uma data padrão para forçar o widget
+                datas_selecionadas = st.date_input(
+                    "Clique nos dias do calendário (Seleção Múltipla):",
+                    value=(), # Tupla vazia permite selecionar vários dias individuais
+                    format="DD/MM/YYYY",
+                    help="Selecione cada dia que o elemento estará disponível."
+                )
+                if datas_selecionadas:
+                    # Converter lista de datas em string para a BD
+                    detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas_selecionadas])
 
-            if st.form_submit_button("GUARDAR"):
-                conn = sqlite3.connect('gestao_operacional.db')
-                conn.execute("INSERT INTO pessoal (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) VALUES (?,?,?,?,?,?,?)",
-                             (n, ni, pst, mot, crs, tipo_d, detalhe_final))
-                conn.commit()
-                conn.close()
-                st.success("Registo efetuado.")
+            if st.form_submit_button("💾 GUARDAR ELEMENTO"):
+                if nome and num and detalhe_final:
+                    conn = sqlite3.connect('gestao_operacional.db')
+                    try:
+                        conn.execute("""INSERT INTO pessoal 
+                                     (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) 
+                                     VALUES (?,?,?,?,?,?,?)""",
+                                     (nome, num, posto, mot, curso, tipo_d, detalhe_final))
+                        conn.commit()
+                        st.success(f"Elemento {nome} guardado com sucesso!")
+                    except Exception as e:
+                        st.error(f"Erro: Verifique se o Nº Interno já existe. ({e})")
+                    finally:
+                        conn.close()
+                else:
+                    st.warning("Preencha todos os campos e selecione os dias no calendário.")
 
-elif menu == "📅 Escalas":
-    c_m, c_a = st.columns(2)
-    m = c_m.selectbox("Mês", range(1, 13), index=datetime.now().month-1)
-    a = c_a.number_input("Ano", value=2026)
+elif escolha == "📅 Escalas":
+    st.subheader("Gerar Escala Mensal")
+    c1, c2 = st.columns(2)
+    mes = c1.selectbox("Mês", range(1, 13), index=datetime.now().month-1)
+    ano = c2.number_input("Ano", value=2026)
+    
     if st.button("🚀 GERAR ESCALA"):
-        df_esc, msg = gerar_escala_mensal(m, a)
+        df_esc, msg = gerar_escala_mensal(mes, ano)
         if df_esc is not None:
             st.table(df_esc)
-            st.download_button("Exportar CSV", df_esc.to_csv(index=False).encode('utf-8'), "escala.csv")
-        else: st.error(msg)
+        else:
+            st.error(msg)
 
-elif menu == "🔄 Presenças":
-    with st.form("pres"):
-        d = st.date_input("Data")
-        num = st.text_input("Nº Interno")
+elif escolha == "🔄 Presenças":
+    st.subheader("Registo de Assiduidade")
+    with st.form("registo_p"):
+        d = st.date_input("Data do Serviço", value=date.today())
+        ni = st.text_input("Nº Interno")
         t = st.selectbox("Tipo", ["Serviço", "Falta"])
         if st.form_submit_button("REGISTAR"):
             conn = sqlite3.connect('gestao_operacional.db')
-            conn.execute("INSERT INTO presencas (data_servico, num_interno, tipo) VALUES (?,?,?)", (str(d), num, t))
+            conn.execute("INSERT INTO presencas (data_servico, num_interno, tipo) VALUES (?,?,?)", (str(d), ni, t))
             conn.commit()
             conn.close()
-            st.success("Ok.")
+            st.success("Registo efetuado.")
 
-elif menu == "⚙️ Configuração":
+elif escolha == "⚙️ Configuração":
+    st.subheader("Ferramentas")
     if st.button("🔄 POVOAR 60 ELEMENTOS DEMO"):
         seed_demo_data()
-        st.success("Povoado.")
+        st.success("Dados de teste criados!")
         st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
