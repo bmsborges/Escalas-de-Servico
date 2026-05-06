@@ -35,7 +35,27 @@ def gerar_escala_mensal(mes, ano):
 
         random.shuffle(disponiveis) # Para rotatividade justa
         equipa = []
+# --- Formatação Detalhada da Célula ---
+        # Criamos um bloco de texto para cada elemento
+        celulas_equipa = []
+        for e in equipa:
+            info = (
+                f"{e['nome']}\n"
+                f"ID: {e['num_interno']}\n"
+                f"Mot: {e['motorista']}\n"
+                f"Curso: {e['curso']}"
+            )
+            celulas_equipa.append(info)
 
+        # Preencher com aviso se faltar pessoal
+        while len(celulas_equipa) < 6:
+            celulas_equipa.append("⚠️\nFALTA\nPESSOAL")
+        
+        escala_final.append([f"{dia:02d}/{mes:02d}"] + celulas_equipa)
+
+    colunas = ["Dia", "Chefe", "Pesado", "TAS", "Elem 4", "Elem 5", "Elem 6"]
+    return pd.DataFrame(escala_final, columns=colunas), "Sucesso"
+    
         # 2. Tentar preencher requisitos mínimos
         # Chefe
         chefe = next((p for p in disponiveis if p['posto'] in chefes_lista), None)
