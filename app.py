@@ -44,7 +44,7 @@ elif menu == "👤 Elementos":
                 # Este é o bloco que faz aparecer o calendário
                 datas = st.date_input(
                     "Selecione os dias no calendário", 
-                    value=[]  # Isto obriga a versão múltipla 
+                    value=[],  # Isto obriga a versão múltipla 
                     format="DD/MM/YYYY"
                 )
                 detalhe_final = ", ".join([str(d) for d in datas])
