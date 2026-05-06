@@ -37,9 +37,7 @@ elif menu == "👤 Elementos":
             crs = st.selectbox("Curso", ["TAS", "TAT", "TS", "Sem curso"])
             tipo_d = st.radio("Disponibilidade", ["Fixo", "Pontual"], horizontal=True)
             
-           tipo_d = st.radio("Disponibilidade", ["Fixo", "Pontual"], horizontal=True)
-
-    	if tipo_d == "Fixo":
+            if tipo_d == "Fixo":
         det = st.multiselect("Dias Semana", ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
         detalhe_final = ", ".join(det)
     else:
