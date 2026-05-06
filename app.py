@@ -48,15 +48,105 @@ elif escolha == "👤 Gestão de Elementos":
         st.data_editor(df_p, use_container_width=True, hide_index=True)
         
     with aba2:
-        with st.form("novo_e"):
-            col1, col2 = st.columns(2)
-            nome = col1.text_input("Nome")
-            num = col2.text_input("Nº Interno")
-            p = st.selectbox("Posto", ["Est", "ESP", "B1", "B2", "B3", "SCH", "CHF", "OFB1", "OFB2"])
-            m = st.radio("Motorista", ["Ligeiro", "Pesado"], horizontal=True)
-            c = st.selectbox("Curso", ["TAS", "TAT", "TS", "Sem curso"])
-            d_tipo = st.radio("Disponibilidade", ["Fixo", "Pontual"], horizontal=True)
-            d_det = st.text_input("Detalhe (Dias da semana ou datas YYYY-MM-DD)")
+       st.markdown("---")
+        st.write("📅 **Configuração de Disponibilidade**")
+        tipo_disp = st.radio("Tipo de Escala", ["Fixo", "Pontual"], horizontal=True)
+        
+        detalhe_final = "" # Variável que irá para a BD
+
+        if tipo_disp == "Fixo":
+            dias_fixos = st.multiselect(
+                "Escolha os dias da semana em que o elemento está disponível:",
+                ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
+            )
+            detalhe_final = ", ".join(dias_fixos)
+            
+        else:
+            # CALENDÁRIO PARA DATAS PONTUAIS
+            datas_selecionadas = st.date_input(
+                "Selecione os dias no calendário (Clique em vários dias):",
+                value=[], # Começa vazio para permitir seleção múltipla
+                format="DD/MM/YYYY"
+            )
+            
+            # Converter a lista de objetos 'date' para uma string formatada (YYYY-MM-DD)
+            if datas_selecionadas:
+                # O Streamlit retorna uma lista de objetos date
+                detalhe_final = ", ".join([str(d) for d in datas_selecionadas])
+        
+        # Botão de submissão do formulário
+        if st.form_submit_button("GUARDAR ELEMENTO"):
+            if nome and num and detalhe_final:
+                conn = sqlite3.connect('gestao_operacional.db')
+                try:
+                    conn.execute("""
+                        INSERT INTO pessoal (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) 
+                        VALUES (?,?,?,?,?,?,?)""",
+                        (nome, num, posto, mot, curso, tipo_disp, detalhe_final))
+                    conn.commit()
+                    st.success(f"Sucesso: {nome} registado com {len(detalhe_final.split(','))} dias de disponibilidade.")
+                except Exception as e:
+                    st.error(f"Erro: O número interno já existe ou ocorreu um problema: {e}")
+                finally:
+                    conn.close()
+            else:
+                st.warning("Por favor, preencha todos os campos e selecione pelo menos um dia no calendário.")
+        
+        # Botão de submissão do formulário
+        if st.form_submit_button("GUARDAR ELEMENTO"):
+            if nome and num and detalhe_final:
+                conn = sqlite3.connect('gestao_operacional.db')
+                try:
+                    conn.execute("""
+                        INSERT INTO pessoal (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) 
+                        VALUES (?,?,?,?,?,?,?)""",
+                        (nome, num, posto, mot, curso, tipo_disp, detalhe_final))
+                    conn.commit()
+                    st.success(f"Sucesso: {nome} registado com {len(detalhe_final.split(','))} dias de disponibilidade.")
+                except Exception as e:
+                    st.error(f"Erro: O número interno já existe ou ocorreu um problema: {e}")
+                finally:
+                    conn.close()
+            else:
+                st.warning("Por favor, preencha todos os campos e selecione pelo menos um dia no calendário.")
+
+        if tipo_disp == "Fixo":
+            dias_fixos = st.multiselect(
+                "Escolha os dias da semana em que o elemento está disponível:",
+                ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
+            )
+            detalhe_final = ", ".join(dias_fixos)
+            
+        else:
+            # CALENDÁRIO PARA DATAS PONTUAIS
+            datas_selecionadas = st.date_input(
+                "Selecione os dias no calendário (Clique em vários dias):",
+                value=[], # Começa vazio para permitir seleção múltipla
+                format="DD/MM/YYYY"
+            )
+            
+            # Converter a lista de objetos 'date' para uma string formatada (YYYY-MM-DD)
+            if datas_selecionadas:
+                # O Streamlit retorna uma lista de objetos date
+                detalhe_final = ", ".join([str(d) for d in datas_selecionadas])
+        
+        # Botão de submissão do formulário
+        if st.form_submit_button("GUARDAR ELEMENTO"):
+            if nome and num and detalhe_final:
+                conn = sqlite3.connect('gestao_operacional.db')
+                try:
+                    conn.execute("""
+                        INSERT INTO pessoal (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) 
+                        VALUES (?,?,?,?,?,?,?)""",
+                        (nome, num, posto, mot, curso, tipo_disp, detalhe_final))
+                    conn.commit()
+                    st.success(f"Sucesso: {nome} registado com {len(detalhe_final.split(','))} dias de disponibilidade.")
+                except Exception as e:
+                    st.error(f"Erro: O número interno já existe ou ocorreu um problema: {e}")
+                finally:
+                    conn.close()
+            else:
+                st.warning("Por favor, preencha todos os campos e selecione pelo menos um dia no calendário.")
             
             if st.form_submit_button("GUARDAR ELEMENTO"):
                 conn = sqlite3.connect('gestao_operacional.db')
