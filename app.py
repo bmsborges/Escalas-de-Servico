@@ -109,19 +109,20 @@ elif "Escalas" in selected_page:
     mes_alvo = c_m.selectbox("Mês", range(1, 13), index=datetime.now().month - 1)
     ano_alvo = c_a.number_input("Ano", value=2026)
     
-    if st.button("🚀 GERAR ESCALA AUTOMÁTICA"):
-        with st.spinner("A calcular requisitos (Chefe, Pesado, TAS)..."):
+if st.button("🚀 EXECUTAR ALGORITMO"):
+        from logic import gerar_escala_mensal
+        
+        with st.spinner("A processar requisitos..."):
             df_gerado, msg = gerar_escala_mensal(mes_alvo, ano_alvo)
             
             if df_gerado is not None:
-                st.success(f"Escala de {mes_alvo}/{ano_alvo} concluída!")
-                st.dataframe(df_gerado, use_container_width=True, hide_index=True)
+                st.success("Escala Gerada!")
+                # Usar st.table para garantir que as 4 linhas por célula aparecem
+                st.table(df_gerado) 
                 
-                # Download
-                csv_file = df_gerado.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Descarregar Escala (CSV)", csv_file, f"escala_{mes_alvo}_{ano_alvo}.csv")
-            else:
-                st.error(msg)
+                # O download em CSV continuará a funcionar com todos os dados na mesma célula
+                csv = df_gerado.to_csv(index=False).encode('utf-8')
+                st.download_button("Baixar Escala", csv, "escala_detalhada.csv")
 
 # D. REGISTO DE PRESENÇAS & TROCAS
 elif "Presenças" in selected_page:
