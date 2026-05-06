@@ -91,3 +91,99 @@ elif "Elementos" in selected_page:
                     conn = sqlite3.connect('gestao_operacional.db')
                     try:
                         conn.execute("INSERT INTO pessoal (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) VALUES (?,?,?,?,?,?,?)",
+                                     (nome, num, posto, mot, curso, tipo_disp, detalhe))
+                        conn.commit()
+                        st.success(f"{nome} adicionado com sucesso!")
+                    except:
+                        st.error("Erro: Número interno já existe.")
+                    finally:
+                        conn.close()
+                else:
+                    st.warning("Preencha o Nome e o Número Interno.")
+
+# C. ESCALAS: GERAR / CONSULTAR
+elif "Escalas" in selected_page:
+    st.subheader("Planeamento de Turnos")
+    
+    c_m, c_a = st.columns(2)
+    mes_alvo = c_m.selectbox("Mês", range(1, 13), index=datetime.now().month - 1)
+    ano_alvo = c_a.number_input("Ano", value=2026)
+    
+    if st.button("🚀 GERAR ESCALA AUTOMÁTICA"):
+        with st.spinner("A calcular requisitos (Chefe, Pesado, TAS)..."):
+            df_gerado, msg = gerar_escala_mensal(mes_alvo, ano_alvo)
+            
+            if df_gerado is not None:
+                st.success(f"Escala de {mes_alvo}/{ano_alvo} concluída!")
+                st.dataframe(df_gerado, use_container_width=True, hide_index=True)
+                
+                # Download
+                csv_file = df_gerado.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Descarregar Escala (CSV)", csv_file, f"escala_{mes_alvo}_{ano_alvo}.csv")
+            else:
+                st.error(msg)
+
+# D. REGISTO DE PRESENÇAS & TROCAS
+elif "Presenças" in selected_page:
+    st.subheader("🔄 Controlo de Execução de Serviço")
+    st.write("Registe quem efetuou o serviço ou reporte faltas para as estatísticas.")
+    
+    with st.form("registo_efetivo"):
+        col_d, col_n, col_t = st.columns(3)
+        data_s = col_d.date_input("Data do Serviço")
+        num_i = col_n.text_input("Nº Interno do Operacional")
+        tipo_s = col_t.selectbox("Tipo", ["Serviço", "Falta"])
+        
+        if st.form_submit_button("REGISTAR NA BASE DE DADOS"):
+            if num_i:
+                conn = sqlite3.connect('gestao_operacional.db')
+                conn.execute("INSERT INTO presencas (data_servico, num_interno, tipo) VALUES (?,?,?)",
+                             (str(data_s), num_i, tipo_s))
+                conn.commit()
+                conn.close()
+                st.success(f"Registo de {tipo_s} efetuado para o operacional {num_i}.")
+            else:
+                st.error("Insira o Número Interno.")
+
+# E. ARQUIVO & IMPORTAÇÃO / EXPORTAÇÃO
+elif "Arquivo" in selected_page:
+    st.subheader("📥 Gestão de Ficheiros")
+    
+    col_exp, col_imp = st.columns(2)
+    
+    with col_exp:
+        st.write("### Exportar Dados")
+        st.write("Gere um ficheiro Excel com todos os elementos e contagem de serviços/faltas.")
+        excel_bin = export_to_excel()
+        st.download_button("💾 Baixar Estatísticas (Excel)", excel_bin, "estatisticas_pessoal.xlsx")
+        
+    with col_imp:
+        st.write("### Importar Dados")
+        st.write("Carregue o ficheiro template preenchido.")
+        f_upload = st.file_uploader("Escolher Excel (.xlsx)", type=["xlsx"])
+        if f_upload and st.button("CONFIRMAR IMPORTAÇÃO"):
+            sucesso, msg_imp = import_from_excel(f_upload)
+            if sucesso: st.success(msg_imp)
+            else: st.error(msg_imp)
+
+# F. CONFIGURAÇÕES
+elif "Configurações" in selected_page:
+    st.subheader("Definições Técnicas")
+    st.write("Utilize estas ferramentas apenas para manutenção ou testes.")
+    
+    if st.button("🔄 GERAR 60 ELEMENTOS DEMO"):
+        seed_demo_data()
+        st.success("Base de dados povoada com 60 elementos de teste!")
+        st.rerun()
+    
+    if st.button("⚠️ LIMPAR TODA A BASE DE DADOS", type="secondary"):
+        conn = sqlite3.connect('gestao_operacional.db')
+        conn.execute("DELETE FROM pessoal")
+        conn.execute("DELETE FROM presencas")
+        conn.commit()
+        conn.close()
+        st.warning("Todos os dados foram apagados.")
+        st.rerun()
+
+st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; color: #9CA3AF; margin-top: 30px; font-size: 0.8rem;'>Sistema de Gestão Operacional 2026</div>", unsafe_allow_html=True)
