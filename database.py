@@ -1,3 +1,4 @@
+import pandas as pd
 import sqlite3
 import random
 from datetime import datetime, timedelta
