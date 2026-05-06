@@ -48,10 +48,9 @@ elif escolha == "👤 Gestão de Elementos":
         st.data_editor(df_p, use_container_width=True, hide_index=True)
         
     with aba2:
-       st.markdown("---")
+        st.markdown("---")
         st.write("📅 **Configuração de Disponibilidade**")
         tipo_disp = st.radio("Tipo de Escala", ["Fixo", "Pontual"], horizontal=True)
-        
         detalhe_final = "" # Variável que irá para a BD
 
         if tipo_disp == "Fixo":
