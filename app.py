@@ -1,122 +1,159 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
-from datetime import datetime
+import calendar
+import random
+from datetime import datetime, date
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="Gestão Operacional de Escalas", layout="wide", page_icon="🚒")
+st.set_page_config(page_title="Gestão de Escalas 22-07", layout="wide", page_icon="🛡️")
 
-# --- CSS CUSTOMIZADO (ASPECTO GRÁFICO) ---
-def apply_theme():
-    st.markdown("""
-        <style>
-        /* Estilo do Menu Lateral */
-        [data-testid="stSidebar"] { background-color: #111827; }
-        [data-testid="stSidebar"] * { color: #f3f4f6 !important; }
+# --- CONSTANTES E REGRAS ---
+POSTOS = ["Est", "ESP", "B3", "B2", "B1", "SCH", "CHF", "OFB2", "OFB1", "OFB Princ", "OFB Sup", "ADJ CMD", "2 CMD", "CMD"]
+CHEFES_LISTA = ["SCH", "CHF", "OFB2", "OFB1", "OFB Princ", "OFB Sup", "ADJ CMD", "2 CMD", "CMD"]
+CURSOS = ["TAS", "TAT", "TS", "Sem curso"]
+DIAS_SEMANA = {"Segunda": 0, "Terça": 1, "Quarta": 2, "Quinta": 3, "Sexta": 4, "Sábado": 5, "Domingo": 6}
+
+# --- BASE DE DADOS ---
+def init_db():
+    conn = sqlite3.connect('gestao_escalas.db')
+    c = conn.cursor()
+    # Tabela de Elementos
+    c.execute('''CREATE TABLE IF NOT EXISTS pessoal (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT, num_interno TEXT, posto TEXT, 
+                    motorista TEXT, curso TEXT, 
+                    disp_tipo TEXT, disp_detalhe TEXT)''')
+    # Tabela de Arquivo de Escalas
+    c.execute('''CREATE TABLE IF NOT EXISTS arquivo_escalas (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    mes_ano TEXT, dados_csv TEXT, data_geracao TEXT)''')
+    conn.commit()
+    conn.close()
+
+# --- FUNÇÕES DE LÓGICA ---
+def get_pessoal():
+    conn = sqlite3.connect('gestao_escalas.db')
+    df = pd.read_sql_query("SELECT * FROM pessoal", conn)
+    conn.close()
+    return df
+
+def gerar_escala_logica(df, mes, ano):
+    num_dias = calendar.monthrange(ano, mes)[1]
+    escala_mensal = []
+    
+    for dia in range(1, num_dias + 1):
+        data_atual = date(ano, mes, dia)
+        dia_semana_num = data_atual.weekday()
         
-        /* Estilo dos Cards e Tabs */
-        .stTabs [data-baseweb="tab-list"] { gap: 24px; }
-        .stTabs [data-baseweb="tab"] { 
-            height: 50px; white-space: pre-wrap; background-color: #f9fafb; 
-            border-radius: 5px 5px 0 0; padding: 10px;
-        }
+        # Filtrar disponíveis para o dia
+        disponiveis = []
+        for _, p in df.iterrows():
+            is_disp = False
+            if p['disp_tipo'] == "Fixo":
+                dias_escolhidos = p['disp_detalhe'].split(", ")
+                if any(DIAS_SEMANA[d] == dia_semana_num for d in dias_escolhidos):
+                    is_disp = True
+            elif p['disp_tipo'] == "Pontual":
+                if str(data_atual) in p['disp_detalhe']:
+                    is_disp = True
+            
+            if is_disp:
+                disponiveis.append(p.to_dict())
         
-        /* Botões */
-        .stButton>button {
-            border-radius: 6px; height: 3em; background-color: #2563eb; color: white;
-            border: none; width: 100%; transition: 0.3s;
-        }
-        .stButton>button:hover { background-color: #1d4ed8; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
-        </style>
+        random.shuffle(disponiveis)
+        equipa = []
+        
+        # 1. Chefe de Equipa
+        chefe = next((p for p in disponiveis if p['posto'] in CHEFES_LISTA), None)
+        if chefe: equipa.append(chefe)
+        
+        # 2. Motorista Pesado
+        pesado = next((p for p in disponiveis if p['motorista'] == "Pesado" and p not in equipa), None)
+        if pesado: equipa.append(pesado)
+        
+        # 3. TAS
+        tas = next((p for p in disponiveis if p['curso'] == "TAS" and p not in equipa), None)
+        if tas: equipa.append(tas)
+        
+        # 4. Restantes elementos até completar 6
+        for p in disponiveis:
+            if p not in equipa and len(equipa) < 6:
+                equipa.append(p)
+        
+        # Formatação da linha
+        nomes_equipa = [e['nome'] for e in equipa]
+        while len(nomes_equipa) < 6: nomes_equipa.append("⚠️ VAGO")
+        
+        escala_mensal.append([f"{dia}/{mes}/{ano}"] + nomes_equipa)
+    
+    return pd.DataFrame(escala_mensal, columns=["Data", "Chefe", "Mot. Pesado", "TAS", "Elem 4", "Elem 5", "Elem 6"])
+
+# --- INTERFACE (CSS) ---
+st.markdown("""
+    <style>
+    .main { background-color: #f8f9fa; }
+    [data-testid="stSidebar"] { background-color: #111827; }
+    .stButton>button { border-radius: 5px; height: 3em; background-color: #2563eb; color: white; border: none; }
+    .stMetric { background-color: white; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb; }
+    </style>
     """, unsafe_allow_html=True)
 
-# --- FUNÇÕES DE NAVEGAÇÃO ---
-def main():
-    apply_theme()
+# --- MENU LATERAL ---
+init_db()
+with st.sidebar:
+    st.title("🛡️ Operacional")
+    st.markdown("---")
     
-    # --- SIDEBAR ESTRUTURADO ---
-    with st.sidebar:
-        st.image("https://cdn-icons-png.flaticon.com/512/2306/2306221.png", width=60)
-        st.title("Sistema de Escalas")
-        st.markdown("---")
-        
-        # Categoria: Elementos
-        with st.expander("👤 ELEMENTOS", expanded=True):
-            sub_elementos = st.radio("Ações:", ["Novo", "Editar"], key="ele")
-            
-        # Categoria: Escalas
-        with st.expander("📅 ESCALAS", expanded=True):
-            sub_escalas = st.radio("Ações:", ["Gerar", "Consultar"], key="esc")
-            
-        # Categoria: Arquivo
-        if st.button("📁 ARQUIVO HISTÓRICO"):
-            st.session_state.menu = "Arquivo"
-            
-        st.markdown("---")
-        # Categoria: Configuração
-        with st.expander("⚙️ CONFIGURAÇÃO"):
-            sub_config = st.radio("Opções:", ["Campos Elementos", "Constituição Equipas", "Aspecto Gráfico"], key="conf")
-
-    # --- LÓGICA DE EXIBIÇÃO DE CONTEÚDO ---
+    # Estrutura solicitada
+    st.subheader("👤 Elementos")
+    menu_elementos = st.radio("Ação:", ["Novo", "Editar"], label_visibility="collapsed")
     
-    # Identificar qual o menu ativo (Este é um exemplo da estrutura)
+    st.subheader("📅 Escalas")
+    menu_escalas = st.radio("Ação:", ["Gerar", "Consultar"], label_visibility="collapsed")
     
-    # 1. ELEMENTOS -> NOVO
-    if "ele" in st.session_state and sub_elementos == "Novo":
-        render_novo_elemento()
-        
-    # 2. ELEMENTOS -> EDITAR
-    elif "ele" in st.session_state and sub_elementos == "Editar":
-        st.header("👤 Editar Elementos Exatentes")
-        st.info("Selecione um elemento da lista para modificar os dados.")
-        # Tabela com botão de edição...
+    st.subheader("📁 Histórico")
+    menu_arquivo = st.checkbox("Ver Arquivo")
+    
+    st.subheader("⚙️ Configuração")
+    menu_config = st.selectbox("Opção:", ["Campos Elementos", "Constituição das Equipas", "Aspecto Gráfico"])
 
-    # 3. ESCALAS -> GERAR
-    elif "esc" in st.session_state and sub_escalas == "Gerar":
-        render_gerar_escala()
+# --- LÓGICA DE PÁGINAS ---
 
-    # 4. CONFIGURAÇÃO -> CONSTITUIÇÃO EQUIPAS
-    elif "conf" in st.session_state and sub_config == "Constituição Equipas":
-        st.header("🛠️ Definição de Regras da Equipa")
+# 1. ELEMENTOS: NOVO
+if not menu_arquivo and menu_elementos == "Novo" and not "Gerar" in menu_escalas:
+    st.title("➕ Novo Elemento")
+    with st.form("form_novo"):
         col1, col2 = st.columns(2)
-        col1.number_input("Mínimo de Chefes", value=1)
-        col1.number_input("Mínimo de Motoristas Pesados", value=1)
-        col2.number_input("Mínimo de Elementos TAS", value=1)
-        col2.number_input("Total de Elementos por Turno", value=6)
-        st.button("Atualizar Regras Operacionais")
-
-# --- COMPONENTES DE INTERFACE ---
-
-def render_novo_elemento():
-    st.header("➕ Cadastrar Novo Elemento")
-    with st.form("novo_elemento"):
-        c1, c2 = st.columns(2)
-        nome = c1.text_input("Nome Profissional")
-        num = c2.text_input("Número Interno")
+        nome = col1.text_input("Nome Completo")
+        num = col2.text_input("Número Interno")
         
-        c3, c4, c5 = st.columns(3)
-        posto = c3.selectbox("Posto", ["Est", "ESP", "B3", "B2", "B1", "SCH", "CHF", "OFB2", "OFB1"])
-        mot = c4.selectbox("Tipo Motorista", ["Pesado", "Ligeiro", "N/A"])
-        curso = c5.selectbox("Curso Principal", ["TAS", "TAT", "TS", "Nenhum"])
+        col3, col4, col5 = st.columns(3)
+        posto = col3.selectbox("Posto", POSTOS)
+        mot = col4.radio("Motorista", ["Pesado", "Ligeiro"])
+        curso = col5.selectbox("Curso", CURSOS)
         
-        st.markdown("### Disponibilidade Padrão")
-        disp_tipo = st.radio("Tipo", ["Fixo (Semanal)", "Pontual (Datas Específicas)"], horizontal=True)
+        st.markdown("---")
+        st.write("📅 **Disponibilidade**")
+        tipo_disp = st.radio("Tipo", ["Fixo", "Pontual"], horizontal=True)
         
-        if st.form_submit_button("💾 Guardar na Base de Dados"):
-            st.success(f"Elemento {nome} adicionado com sucesso!")
+        if tipo_disp == "Fixo":
+            detalhe = st.multiselect("Dias da Semana:", list(DIAS_SEMANA.keys()))
+            detalhe_str = ", ".join(detalhe)
+        else:
+            detalhe_str = st.text_area("Datas (Formato: YYYY-MM-DD, separadas por vírgula)")
+            
+        if st.form_submit_button("Guardar Elemento"):
+            conn = sqlite3.connect('gestao_escalas.db')
+            conn.execute("INSERT INTO pessoal (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) VALUES (?,?,?,?,?,?,?)",
+                         (nome, num, posto, mot, curso, tipo_disp, detalhe_str))
+            conn.commit()
+            conn.close()
+            st.success("Elemento registado!")
 
-def render_gerar_escala():
-    st.header("📅 Gerar Nova Escala Mensal")
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.date_input("Mês de Referência", value=datetime(2026, 6, 1))
-        st.multiselect("Filtrar por Disponibilidade", ["Fixo", "Pontual"], default=["Fixo", "Pontual"])
-        if st.button("🚀 Iniciar Algoritmo de Distribuição"):
-            st.toast("A processar escala...")
-    
-    with col2:
-        st.markdown("#### Pré-visualização")
-        st.caption("A escala gerada aparecerá aqui para validação antes de ser arquivada.")
-
-if __name__ == "__main__":
-    main()
+# 2. ELEMENTOS: EDITAR
+elif not menu_arquivo and menu_elementos == "Editar":
+    st.title("📝 Editar Efetivos")
+    df = get_pessoal()
+    st.data_editor(df, use_container_width=True, num_rows="dynamic")
+    st.info("Pode editar diretamente na tabela acima.")
