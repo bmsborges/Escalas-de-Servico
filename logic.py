@@ -6,6 +6,7 @@ import random
 from datetime import date
 
 def gerar_escala_mensal(mes, ano):
+    """Gera a escala mensal com 6 elementos e formatação detalhada por célula."""
     conn = sqlite3.connect('gestao_operacional.db')
     df = pd.read_sql_query("SELECT * FROM pessoal", conn)
     conn.close()
@@ -14,6 +15,7 @@ def gerar_escala_mensal(mes, ano):
         return None, "Erro: Necessitas de pelo menos 6 elementos na base de dados."
 
     num_dias = calendar.monthrange(ano, mes)[1]
+    # Lista de postos que podem ser chefes de equipa
     chefes_lista = ["SCH", "CHF", "OFB2", "OFB1", "OFB Princ", "OFB Sup", "ADJ CMD", "2 CMD", "CMD"]
     dias_semana_pt = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
     
@@ -23,82 +25,72 @@ def gerar_escala_mensal(mes, ano):
         data_atual = date(ano, mes, dia)
         dia_semana_nome = dias_semana_pt[data_atual.weekday()]
         
-        # 1. Filtrar quem está disponível hoje
+        # 1. Filtrar disponíveis (Fixo ou Pontual)
         disponiveis = []
         for _, p in df.iterrows():
             if p['disp_tipo'] == "Fixo":
-                if dia_semana_nome in p['disp_detalhe']:
+                if dia_semana_nome in str(p['disp_detalhe']):
                     disponiveis.append(p.to_dict())
             elif p['disp_tipo'] == "Pontual":
-                if str(data_atual) in p['disp_detalhe']:
+                if str(data_atual) in str(p['disp_detalhe']):
                     disponiveis.append(p.to_dict())
 
-        random.shuffle(disponiveis) # Para rotatividade justa
+        random.shuffle(disponiveis)
         equipa = []
-# --- Formatação Detalhada da Célula ---
-        # Criamos um bloco de texto para cada elemento
-        celulas_equipa = []
-        for e in equipa:
-            info = (
-                f"{e['nome']}\n"
-                f"ID: {e['num_interno']}\n"
-                f"Mot: {e['motorista']}\n"
-                f"Curso: {e['curso']}"
-            )
-            celulas_equipa.append(info)
 
-        # Preencher com aviso se faltar pessoal
-        while len(celulas_equipa) < 6:
-            celulas_equipa.append("⚠️\nFALTA\nPESSOAL")
-        
-        escala_final.append([f"{dia:02d}/{mes:02d}"] + celulas_equipa)
-
-    colunas = ["Dia", "Chefe", "Pesado", "TAS", "Elem 4", "Elem 5", "Elem 6"]
-    return pd.DataFrame(escala_final, columns=colunas), "Sucesso"
-    
-        # 2. Tentar preencher requisitos mínimos
-        # Chefe
+        # 2. Seleção por Requisitos
+        # A. Chefe
         chefe = next((p for p in disponiveis if p['posto'] in chefes_lista), None)
         if chefe: equipa.append(chefe)
         
-        # Motorista Pesados
+        # B. Motorista Pesados
         pesado = next((p for p in disponiveis if p['motorista'] == "Pesado" and p not in equipa), None)
         if pesado: equipa.append(pesado)
         
-        # TAS
+        # C. TAS
         tas = next((p for p in disponiveis if p['curso'] == "TAS" and p not in equipa), None)
         if tas: equipa.append(tas)
 
-        # 3. Completar até 6 elementos
+        # D. Restantes (até 6)
         for p in disponiveis:
             if p not in equipa and len(equipa) < 6:
                 equipa.append(p)
 
-        # Formatar nomes para a tabela
-        nomes = [e['nome'] for e in equipa]
-        while len(nomes) < 6: nomes.append("⚠️ FALTA PESSOAL")
-        
-        escala_final.append([f"{dia:02d}/{mes:02d}", nomes[0], nomes[1], nomes[2], nomes[3], nomes[4], nomes[5]])
+        # 3. Formatação Detalhada da Célula (Nome, ID, Motorista, Curso)
+        celulas_formatadas = []
+        for e in equipa:
+            info = (
+                f"**{e['nome']}**\n"
+                f"ID: {e['num_interno']}\n"
+                f"Mot: {e['motorista']}\n"
+                f"Curso: {e['curso']}"
+            )
+            celulas_formatadas.append(info)
 
-    colunas = ["Dia", "Chefe", "Pesado", "TAS", "Elem 4", "Elem 5", "Elem 6"]
+        while len(celulas_formatadas) < 6:
+            celulas_formatadas.append("⚠️\n**FALTA PESSOAL**\n---\n---")
+        
+        escala_final.append([f"{dia:02d}/{mes:02d}"] + celulas_formatadas)
+
+    colunas = ["Dia", "Chefe de Equipa", "Mot. Pesado", "TAS", "Elemento 4", "Elemento 5", "Elemento 6"]
     return pd.DataFrame(escala_final, columns=colunas), "Sucesso"
 
-# Manter as outras funções (export_to_excel, etc) abaixo...
 def export_to_excel():
+    """Exporta as estatísticas de serviços e faltas para Excel."""
     from database import get_stats
     df = get_stats()
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Estatisticas')
+        df.to_excel(writer, index=False, sheet_name='Estatísticas')
     return output.getvalue()
 
 def import_from_excel(uploaded_file):
+    """Importa elementos de um ficheiro Excel para a base de dados."""
     try:
         df = pd.read_excel(uploaded_file)
         conn = sqlite3.connect('gestao_operacional.db')
-        # Mapeia colunas e insere
         df.to_sql('pessoal', conn, if_exists='append', index=False)
         conn.close()
-        return True, f"Importados {len(df)} elementos."
+        return True, f"Sucesso: {len(df)} elementos importados."
     except Exception as e:
-        return False, str(e)
+        return False, f"Erro na importação: {e}"
