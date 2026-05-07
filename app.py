@@ -45,33 +45,25 @@ elif menu == "👤 Elementos":
                 d_fixos = st.multiselect("Dias da Semana", ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
                 detalhe_final = ", ".join(d_fixos)
             else:
-                st.form_submit_button("mostrar_calendario")
-                if st.button("📅 Selecionar Datas Específicas"):
-                   st.session_state.mostrar_calendario = True
-                if st.session_state.get('mostrar_calendario', False):
-        # A tupla vazia () em 'value' permite selecionar múltiplos dias avulsos
-                    datas_selecionadas = st.date_input(
-                    "Selecione os dias no calendário:",
-                    value=(), 
-                    format="DD/MM/YYYY",
-                    help="Clique em cada dia que deseja adicionar. Clique novamente para remover."
-                )
-            if datas_selecionadas:
-                # Exibição visual das datas selecionadas para o utilizador
-                st.write(f"**Datas selecionadas:** {len(datas_selecionadas)}")
+                # Botão para abrir calendário
+                if st.form_submit_button("📅 ABRIR CALENDÁRIO PARA DATAS PONTUAIS"):
+                    st.session_state.calendario_aberto = True
                 
-                # Conversão para o formato de texto YYYY-MM-DD esperado pela base de dados
-                detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas_selecionadas])
-    
-                if st.form_submit_button("💾 GUARDAR ELEMENTO"):
-                    if n and ni and detalhe_final:
-                        conn = sqlite3.connect('gestao_operacional.db')
-                        conn.execute("INSERT INTO pessoal (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) VALUES (?,?,?,?,?,?,?)",
-                                     (n, ni, pst, mot, crs, tipo_d, detalhe_final))
-                        conn.commit()
-                        conn.close()
-                        st.success("Operacional registado!")
-                        st.session_state.calendario_aberto = False
+                if st.session_state.get('calendario_aberto', False):
+                    # Seleção de dias individualizados[cite: 1]
+                    datas = st.date_input("Selecione os dias individualmente:", value=(), format="DD/MM/YYYY")
+                    if datas:
+                        detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas])
+
+            if st.form_submit_button("💾 GUARDAR ELEMENTO"):
+                if n and ni and detalhe_final:
+                    conn = sqlite3.connect('gestao_operacional.db')
+                    conn.execute("INSERT INTO pessoal (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) VALUES (?,?,?,?,?,?,?)",
+                                 (n, ni, pst, mot, crs, tipo_d, detalhe_final))
+                    conn.commit()
+                    conn.close()
+                    st.success("Operacional registado!")
+                    st.session_state.calendario_aberto = False
 
 elif menu == "📅 Escalas":
     c1, c2 = st.columns(2)
