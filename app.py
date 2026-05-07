@@ -45,11 +45,7 @@ elif menu == "👤 Elementos":
                 d_fixos = st.multiselect("Dias da Semana", ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
                 detalhe_final = ", ".join(d_fixos)
             else:
-                # No seu ficheiro app.py, dentro da secção de cadastro:
-
-            if tipo_d == "Pontual":
-                    # O botão para abrir o calendário (conforme solicitado anteriormente)
-                if st.button("📅 Selecionar Datas Específicas"):
+              if st.button("📅 Selecionar Datas Específicas"):
                     st.session_state.mostrar_calendario = True
 
                 if st.session_state.get('mostrar_calendario', False):
