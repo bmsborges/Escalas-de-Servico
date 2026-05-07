@@ -8,12 +8,12 @@ from database import init_db, seed_demo_data, get_stats
 from logic import gerar_escala_mensal, export_to_excel
 
 # 1. Configuração de Página
-st.set_page_config(page_title="Command Center - Operacional", layout="wide", page_icon="🛡️")
+st.set_page_config(page_title="Bombeiros Póvoa de Varzim - Comando", layout="wide", page_icon="🛡️")
 init_db()
 apply_styles()
 
 # 2. Cabeçalho Minimalista
-st.markdown("<h1 style='text-align: center; color: #374151;'>SISTEMA OPERACIONAL</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #374151;'>GESTÃO OPERACIONAL</h1>", unsafe_allow_html=True)
 
 # 3. Menu Superior Dropdown
 menu_opcoes = [
