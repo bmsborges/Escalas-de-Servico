@@ -58,26 +58,24 @@ elif menu == "👤 Elementos":
             d_fixos = st.multiselect("Dias da Semana", ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
             detalhe_final = ", ".join(d_fixos)
         
-        else:
-            # No ficheiro app.py, dentro da lógica de disponibilidade "Pontual"
-        if tipo_d == "Pontual":
-            # O uso de value=() ativa a seleção múltipla de datas individuais
-            datas_selecionadas = st.date_input(
-                "Selecione os dias (pode clicar em 1 ou em vários dias isolados):",
-                value=(), 
-                format="DD/MM/YYYY",
-                help="Cada clique num dia adiciona-o à lista. Clique novamente para remover."
-            )
+        else:      
+        # O uso de value=() ativa a seleção múltipla de datas individuais
+        datas_selecionadas = st.date_input(
+            "Selecione os dias (pode clicar em 1 ou em vários dias isolados):",
+            value=(), 
+            format="DD/MM/YYYY",
+            help="Cada clique num dia adiciona-o à lista. Clique novamente para remover."
+        )
         
-            if datas_selecionadas:
-                # Exibe as datas selecionadas para confirmação do utilizador
-                st.write(f"📅 **Datas Escolhidas:** {len(datas_selecionadas)}")
+        if datas_selecionadas:
+            # Exibe as datas selecionadas para confirmação do utilizador
+            st.write(f"📅 **Datas Escolhidas:** {len(datas_selecionadas)}")
                 
-                # Converte a lista de objetos 'date' para a string formatada guardada na BD
-                # Exemplo: "2026-05-10, 2026-05-15, 2026-05-16"
-                detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas_selecionadas])
-                st.markdown("---")
-                # Botão final de guardar (Este sim, processa tudo)
+            # Converte a lista de objetos 'date' para a string formatada guardada na BD
+            # Exemplo: "2026-05-10, 2026-05-15, 2026-05-16"
+            detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas_selecionadas])
+            st.markdown("---")
+            # Botão final de guardar (Este sim, processa tudo)
         if st.button("💾 GUARDAR OPERACIONAL"):
             if n and ni and detalhe_final:
                 conn = sqlite3.connect('gestao_operacional.db')
