@@ -56,15 +56,15 @@ elif "Efetivos" in menu:
     with aba2:
         with st.form("novo_app", clear_on_submit=True):
             nome = st.text_input("Nome Profissional")
-            ni = st.text_input("Número Interno")[cite: 1]
-            p = st.selectbox("Posto", ["B1", "SCH", "CHF", "CMD"])[cite: 1]
+            ni = st.text_input("Número Interno")
+            p = st.selectbox("Posto", ["B1", "SCH", "CHF", "CMD"])
             
-            tipo_d = st.radio("Disponibilidade", ["Fixo", "Pontual"], horizontal=True)[cite: 1]
+            tipo_d = st.radio("Disponibilidade", ["Fixo", "Pontual"], horizontal=True)
             if tipo_d == "Pontual":
-                datas = st.date_input("Escolha os dias", value=(), format="DD/MM/YYYY")[cite: 1]
+                datas = st.date_input("Escolha os dias", value=(), format="DD/MM/YYYY")
                 detalhe = ", ".join([d.strftime("%Y-%m-%d") for d in datas])
             else:
-                detalhe = st.text_input("Dias (ex: Segunda, Quarta)")[cite: 1]
+                detalhe = st.text_input("Dias (ex: Segunda, Quarta)")
 
             if st.form_submit_button("REGISTAR ELEMENTO"):
                 st.success("Guardado!")
