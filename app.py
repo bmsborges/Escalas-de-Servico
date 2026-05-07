@@ -69,7 +69,7 @@ elif menu == "👤 Elementos":
                     "Selecione os dias individualmente (Clique para adicionar):", 
                     value=(), 
                     format="DD/MM/YYYY"
-                )[cite: 1]
+                )
                 
                 if datas:
                     detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas])
