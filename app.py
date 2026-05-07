@@ -45,7 +45,7 @@ elif menu == "👤 Elementos":
                 d_fixos = st.multiselect("Dias da Semana", ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
                 detalhe_final = ", ".join(d_fixos)
             else:
-                st.form(mostrar_calendario, clear_on_submit=False, *, enter_to_submit=True, border=True, width="stretch", height="content")
+                st.form_submit_button("mostrar_calendario")
                 if st.button("📅 Selecionar Datas Específicas"):
                    st.session_state.mostrar_calendario = True
                 if st.session_state.get('mostrar_calendario', False):
