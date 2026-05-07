@@ -28,9 +28,9 @@ st.markdown('<div class="main-card">', unsafe_allow_html=True)
 if menu == "🏠 Dashboard":
     df = get_stats()
     c1, c2, c3 = st.columns(3)
-    c1.metric("Efetivos", len(df))[cite: 1]
-    c2.metric("Serviços", df['servicos'].sum())[cite: 1]
-    c3.metric("Faltas", df['faltas'].sum())[cite: 1]
+    c1.metric("Efetivos", len(df))
+    c2.metric("Serviços", df['servicos'].sum())
+    c3.metric("Faltas", df['faltas'].sum())
 
 elif menu == "👤 Elementos":
     aba1, aba2 = st.tabs(["📋 Lista de Efetivos", "➕ Novo Registo"])
@@ -44,18 +44,18 @@ elif menu == "👤 Elementos":
         ni = st.text_input("Nº Interno")
         
         col_a, col_b = st.columns(2)
-        pst = col_a.selectbox("Posto", ["B1", "B2", "SCH", "CHF", "CMD"])[cite: 1]
-        crs = col_b.selectbox("Curso", ["TAS", "TAT", "TS", "Sem curso"])[cite: 1]
-        mot = st.radio("Motorista", ["Ligeiro", "Pesado"], horizontal=True)[cite: 1]
+        pst = col_a.selectbox("Posto", ["B1", "B2", "SCH", "CHF", "CMD"])
+        crs = col_b.selectbox("Curso", ["TAS", "TAT", "TS", "Sem curso"])
+        mot = st.radio("Motorista", ["Ligeiro", "Pesado"], horizontal=True)
         
         st.markdown("---")
         st.write("📅 **Disponibilidade**")
-        tipo_d = st.radio("Tipo de Escala", ["Fixo", "Pontual"], horizontal=True)[cite: 1]
+        tipo_d = st.radio("Tipo de Escala", ["Fixo", "Pontual"], horizontal=True)
         
         detalhe_final = ""
 
         if tipo_d == "Fixo":
-            d_fixos = st.multiselect("Dias da Semana", ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])[cite: 1]
+            d_fixos = st.multiselect("Dias da Semana", ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
             detalhe_final = ", ".join(d_fixos)
         
         else:
@@ -72,7 +72,7 @@ elif menu == "👤 Elementos":
                 )[cite: 1]
                 
                 if datas:
-                    detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas])[cite: 1]
+                    detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas])
                     st.write(f"✅ {len(datas)} dias selecionados.")
 
         st.markdown("---")
