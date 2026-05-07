@@ -55,7 +55,6 @@ elif menu == "👤 Elementos":
                     format="DD/MM/YYYY",
                     help="Clique em cada dia que deseja adicionar. Clique novamente para remover."
                 )
-
             if datas_selecionadas:
                 # Exibição visual das datas selecionadas para o utilizador
                 st.write(f"**Datas selecionadas:** {len(datas_selecionadas)}")
