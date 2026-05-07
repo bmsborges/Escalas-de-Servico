@@ -40,8 +40,8 @@ elif menu == "👤 Elementos":
     
     with aba2:
         # Campos básicos
-        n = st.text_input("Nome Profissional")[cite: 1]
-        ni = st.text_input("Nº Interno")[cite: 1]
+        n = st.text_input("Nome")
+        ni = st.text_input("Nº Interno")
         
         col_a, col_b = st.columns(2)
         pst = col_a.selectbox("Posto", ["B1", "B2", "SCH", "CHF", "CMD"])[cite: 1]
