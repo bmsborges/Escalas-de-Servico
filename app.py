@@ -64,7 +64,9 @@ elif "Efetivos" in menu:
                 datas = st.date_input("Escolha os dias", value=(), format="DD/MM/YYYY")
                 detalhe = ", ".join([d.strftime("%Y-%m-%d") for d in datas])
             else:
-                detalhe = st.text_input("Dias (ex: Segunda, Quarta)")
+                dias = st.multiselect("Selecione os dias da semana:", 
+                                     ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
+                detalhe_final = ", ".join(dias)
 
             if st.form_submit_button("REGISTAR ELEMENTO"):
                 st.success("Guardado!")
