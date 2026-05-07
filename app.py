@@ -49,36 +49,74 @@ elif "Efetivos" in menu:
     st.subheader("Registo de Pessoal")
     # Baseado na estrutura do template
     aba1, aba2 = st.tabs(["Lista", "Novo"])
-    
-    with aba1:
-        st.data_editor(get_stats(), use_container_width=True, hide_index=True)
-    
-    with aba2:
-        with st.form("novo_app", clear_on_submit=True):
-            nome = st.text_input("Nome Profissional")
-            ni = st.text_input("Número Interno")
-            p = st.selectbox("Posto", ["B1", "SCH", "CHF", "CMD"])
-            
-            tipo_d = st.radio("Disponibilidade", ["Fixo", "Pontual"], horizontal=True)
-            if tipo_d == "Pontual":
-                datas_selecionadas = st.date_input(
-                    "Clique nos dias do calendário (Seleção Múltipla):",
-                    value=(), # Tupla vazia permite selecionar vários dias individuais
-                    format="DD/MM/YYYY",
-                    help="Selecione cada dia que o elemento estará disponível."
-                )
-                if datas_selecionadas:
-                    # Converter lista de datas em string para a BD
-                    detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas_selecionadas])
-            else:
-                dias = st.multiselect("Selecione os dias da semana:", 
-                                     ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
-                detalhe_final = ", ".join(dias)
 
-            if st.form_submit_button("REGISTAR ELEMENTO"):
-                st.success("Guardado!")
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("---")
+st.write("📅 **Disponibilidade Operacional**")
 
+# Layout em colunas para colocar o botão à frente das opções
+col_opcoes, col_botao = st.columns([2, 1])
+
+with col_opcoes:
+    # Seleção do tipo de disponibilidade
+    tipo_d = st.radio("Tipo de Escala", ["Fixo", "Pontual"], horizontal=True, label_visibility="collapsed")
+
+detalhe_final = ""
+
+if tipo_d == "Fixo":
+    # Campo para disponibilidade fixa semanal
+    dias_fixos = st.multiselect("Selecione os dias da semana:", 
+                                ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
+    detalhe_final = ", ".join(dias_fixos)
+
+elif tipo_d == "Pontual":
+    with col_botao:
+        # Botão que aparece apenas quando "Pontual" é selecionado
+        if st.button("📅 Abrir Calendário"):
+            st.session_state.mostrar_calendario = True
+
+    # Se o botão for clicado, o widget de data aparece
+    if st.session_state.get('mostrar_calendario', False):
+        st.markdown("<div style='padding: 10px; background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db;'>", unsafe_allow_html=True)
+        
+        # Widget de data para seleção múltipla de dias específicos[cite: 1]
+        datas_selecionadas = st.date_input(
+            "Selecione os dias de serviço:",
+            value=(), 
+            format="DD/MM/YYYY",
+            help="Pode selecionar vários dias individuais clicando neles."
+        )
+        
+        if datas_selecionadas:
+            # Armazenar detalhe da disponibilidade conforme o formato do sistema[cite: 1]
+            detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas_selecionadas])
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# O botão de submissão do formulário utiliza os dados recolhidos
+if st.form_submit_button("REGISTAR ELEMENTO"):
+    if nome and num_interno and detalhe_final: # Verificação de campos obrigatórios[cite: 1]
+        # Lógica de gravação na base de dados...
+        st.success(f"Registo de {nome} (ID: {num_interno}) concluído com sucesso!")
+        st.session_state.mostrar_calendario = False # Reset do calendário após sucesso
+    else:
+        st.warning("Por favor, preencha todos os dados e selecione as datas.")
+ if st.form_submit_button("💾 GUARDAR ELEMENTO"):
+                if nome and num and detalhe_final:
+                    conn = sqlite3.connect('gestao_operacional.db')
+                    try:
+                        conn.execute("""INSERT INTO pessoal 
+                                     (nome, num_interno, posto, motorista, curso, disp_tipo, disp_detalhe) 
+                                     VALUES (?,?,?,?,?,?,?)""",
+                                     (nome, num, posto, mot, curso, tipo_d, detalhe_final))
+                        conn.commit()
+                        st.success(f"Elemento {nome} guardado com sucesso!")
+                    except Exception as e:
+                        st.error(f"Erro: Verifique se o Nº Interno já existe. ({e})")
+                    finally:
+                        conn.close()
+                else:
+                    st.warning("Preencha todos os campos e selecione os dias no calendário.")    
+   
 elif "Gerar Escala" in menu:
     st.markdown("<div class='main-card'>", unsafe_allow_html=True)
     st.subheader("Planear Próximo Mês")
