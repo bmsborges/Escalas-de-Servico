@@ -100,7 +100,7 @@ if st.form_submit_button("REGISTAR ELEMENTO"):
         st.session_state.mostrar_calendario = False # Reset do calendário após sucesso
     else:
         st.warning("Por favor, preencha todos os dados e selecione as datas.")
- if st.form_submit_button("💾 GUARDAR ELEMENTO"):
+             if st.form_submit_button("💾 GUARDAR ELEMENTO"):
                 if nome and num and detalhe_final:
                     conn = sqlite3.connect('gestao_operacional.db')
                     try:
