@@ -61,8 +61,15 @@ elif "Efetivos" in menu:
             
             tipo_d = st.radio("Disponibilidade", ["Fixo", "Pontual"], horizontal=True)
             if tipo_d == "Pontual":
-                datas = st.date_input("Escolha os dias", value=(), format="DD/MM/YYYY")
-                detalhe = ", ".join([d.strftime("%Y-%m-%d") for d in datas])
+                datas_selecionadas = st.date_input(
+                    "Clique nos dias do calendário (Seleção Múltipla):",
+                    value=(), # Tupla vazia permite selecionar vários dias individuais
+                    format="DD/MM/YYYY",
+                    help="Selecione cada dia que o elemento estará disponível."
+                )
+                if datas_selecionadas:
+                    # Converter lista de datas em string para a BD
+                    detalhe_final = ", ".join([d.strftime("%Y-%m-%d") for d in datas_selecionadas])
             else:
                 dias = st.multiselect("Selecione os dias da semana:", 
                                      ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"])
