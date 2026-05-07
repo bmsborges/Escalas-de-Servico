@@ -49,11 +49,11 @@ elif menu == "👤 Elementos":
                    st.session_state.mostrar_calendario = True
                 if st.session_state.get('mostrar_calendario', False):
         # A tupla vazia () em 'value' permite selecionar múltiplos dias avulsos
-                datas_selecionadas = st.date_input(
-                "Selecione os dias no calendário:",
-                value=(), 
-                format="DD/MM/YYYY",
-                help="Clique em cada dia que deseja adicionar. Clique novamente para remover."
+                    datas_selecionadas = st.date_input(
+                    "Selecione os dias no calendário:",
+                    value=(), 
+                    format="DD/MM/YYYY",
+                    help="Clique em cada dia que deseja adicionar. Clique novamente para remover."
                 )
 
             if datas_selecionadas:
